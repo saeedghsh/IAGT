@@ -1,0 +1,31 @@
+annotations:
+- category: circle
+  cen: 100 , 100
+  id: null
+  rad: 55.0
+- category: polygon
+  id: null
+  p1: 50 , 50
+  p2: 150 , 250
+  p3: 150 , 350
+  p4: 200 , 500
+  p5: 70 , 400
+- category: line
+  id: null
+  p1: 105 , 550
+  p2: 500 , 355
+- category: constellation
+  id: null
+  p1: 100.5 , 100.5
+  p2: 500.5 , 200.5
+  p3: 89.5 , 102.5
+  p4: 45.5 , 52.1
+- category: constellation
+  id: null
+  p1: 15 , 100.5
+  p2: 355 , 250
+  p3: 485 , 125
+  p4: 45 , 121
+  
+date: 2015
+image: test1.png

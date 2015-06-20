@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'isagt.ui'
 #
-# Created: Thu Jun 11 17:56:38 2015
+# Created: Sat Jun 20 18:33:46 2015
 #      by: pyside-uic 0.2.13 running on PySide 1.1.0
 #
 # WARNING! All changes made in this file will be lost!
@@ -148,9 +148,6 @@ class Ui_MainWindow(object):
         self.unwrapFlag.setChecked(True)
         self.unwrapFlag.setAutoExclusive(False)
         self.unwrapFlag.setObjectName("unwrapFlag")
-        self.pushButton = QtGui.QPushButton(self.centralwidget)
-        self.pushButton.setGeometry(QtCore.QRect(810, 630, 251, 27))
-        self.pushButton.setObjectName("pushButton")
         self.line_2 = QtGui.QFrame(self.centralwidget)
         self.line_2.setGeometry(QtCore.QRect(810, 610, 251, 16))
         self.line_2.setFrameShape(QtGui.QFrame.HLine)
@@ -203,6 +200,5 @@ class Ui_MainWindow(object):
         self.unwrapOption.setItemText(1, QtGui.QApplication.translate("MainWindow", "Fisheye - Forward", None, QtGui.QApplication.UnicodeUTF8))
         self.unwrapOption.setItemText(2, QtGui.QApplication.translate("MainWindow", "OminCam", None, QtGui.QApplication.UnicodeUTF8))
         self.unwrapFlag.setText(QtGui.QApplication.translate("MainWindow", "Unrwap image(s)", None, QtGui.QApplication.UnicodeUTF8))
-        self.pushButton.setText(QtGui.QApplication.translate("MainWindow", "Save and Exit", None, QtGui.QApplication.UnicodeUTF8))
         self.AdvanceOptionS.setText(QtGui.QApplication.translate("MainWindow", "Options", None, QtGui.QApplication.UnicodeUTF8))
 

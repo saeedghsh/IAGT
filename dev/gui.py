@@ -147,7 +147,7 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         self.myCanvas.mpl_connect('button_press_event', self.mouseClick)
         
         ######### Push buttons
-        self.ui.loadButton.clicked.connect(self.loadFiles)
+        self.ui.loadButton.clicked.connect(self.loadFileLists)
         self.ui.aboutButton.clicked.connect(self.about)
         self.ui.navGoto.clicked.connect(self.navGoTo)
         self.ui.navNext.clicked.connect(self.navNext)
@@ -163,14 +163,14 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         self.yamlList, self.imagList = None, None
         
     #### loading stage
-    def loadFiles(self):
-
+    def loadFileLists(self):
+        self.path = []
         # Loading file(s) name(s)
         if self.ui.loadOption.currentText() == 'Folder':
-            path = QtGui.QFileDialog.getExistingDirectory()
-            content = [ f for f in os.listdir(path)
-                        if os.path.isfile(os.path.join(path,f)) ]
-            filesNames = [os.path.join(path,f) for f in content]
+            self.path = QtGui.QFileDialog.getExistingDirectory()
+            content = [ f for f in os.listdir(self.path)
+                        if os.path.isfile(os.path.join(self.path,f)) ]
+            filesNames = [os.path.join(self.path,f) for f in content]
 
         elif self.ui.loadOption.currentText() == 'Single File':
             filesNames = QtGui.QFileDialog.getOpenFileName()
@@ -188,33 +188,54 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
             elif filesNames[i][-4:] in imagFormats:
                 imagList.append(filesNames[i])
 
-        # Initialtion an enabling buttons if there is amy image loaded
-        
+        # if there is amy image loaded        
         if len(imagList) > 0:
-            yamlList.sort(), imagList.sort()
-            self.yamlList, self.imagList = yamlList, imagList
+            # enabling buttons
             self.ui.groupCategory.setEnabled(True)
             self.ui.groupNavigation.setEnabled(True)
             self.ui.groupAnnotation.setEnabled(True)
             self.ui.groupAnnotationList.setEnabled(True)
             self.ui.groupAnnotationID.setEnabled(True)
 
+            # loading fileLists
+            yamlList.sort(), imagList.sort()
+            self.imagList = imagList
             self.imagIndx = 0
+            self.yamlList = yamlList 
 
             self.startNewImage()
             
-        else:
-            pass
+    def loadYamlLists(self):
+        if len(self.path) > 0:
+            content = [ f for f in os.listdir(self.path)
+                        if os.path.isfile(os.path.join(self.path,f)) ]
+            filesNames = [os.path.join(self.path,f) for f in content]
+
+        # sort file names into yamls and images
+        # remove empty strings and none image files
+        yamlList = []
+        yamlFormats = ['yaml', 'YAML', 'Yaml']
+        for i in range(len(filesNames)-1,-1,-1):
+            if len(filesNames[i]) == 0:
+                pass #filesNames.pop(i)
+            elif filesNames[i][-4:] in yamlFormats:
+                yamlList.append(filesNames[i])
+
+        yamlList.sort()
+        self.yamlList = yamlList
 
     def startNewImage(self):
         # this function is [always?] hosted by other functins
-        # such as "loadFiles", "navGoTo"
+        # such as "loadFileLists", "navGoTo"
         # be careful not to lock it up!
 
-        ### plotting the image
+        self.circ, self.poly, self.line, self.cons =[],[],[],[]
+
+        ### setting navigation counter
         self.ui.textAddress.setText(self.imagList[self.imagIndx])
         self.ui.navigationCounter.setText(str(self.imagIndx+1)+'/'+str(len(self.imagList)))
-
+        
+        ### plotting the image
         image = cv2.imread(self.imagList[self.imagIndx])
         if self.ui.unwrapFlag.isChecked():
             #TODO
@@ -228,44 +249,43 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         self.myCanvas.plotImage(self.image)        
 
         ### Loading Yaml file
-        self.circ, self.poly, self.line, self.cons =[],[],[],[]
         if self.ui.loadYaml.isChecked():
-            self.yamlIndx =  None
-            imagName = self.imagList[self.imagIndx].split('/')[-1]
-            imagName = imagName.split('.')[0]
-            for idx in range(len(self.yamlList)):
-                yamlName = self.yamlList[idx].split('/')[-1]
-                yamlName = yamlName.split('.')[0]
-                if yamlName == imagName:
-                    self.yamlIndx = idx
-                    break
-    
-            if self.yamlIndx is not None:
-                data = yaml.load(open(self.yamlList[self.yamlIndx], 'r'))
-                #checks if there is any annotation
-                if 'annotations' in data.keys():
-                    #checks if the annotation is not empty
-                    if data['annotations'] is not None:
-                        circ, poly, line, cons = parseAnnotationYaml(data)
-                        self.circ, self.poly, self.line, self.cons = circ,poly,line,cons
-            else:
-                print "yaml not found"
-
+           self.loadYamlFile()
         ### plot available annotations
         if self.ui.displayAnnotation.isChecked():
             self.plotAllAnnotations()
-
-
         ### initializing-emptying the temp list
-        self.temp = []
+        self.resetAnnotation() # => self.temp = []
+        
+    def loadYamlFile(self):
+        self.yamlIndx =  None
+        imagName = self.imagList[self.imagIndx].split('/')[-1]
+        imagName = imagName.split('.')[0]
+        for idx in range(len(self.yamlList)):
+            yamlName = self.yamlList[idx].split('/')[-1]
+            yamlName = yamlName.split('.')[0]
+            if yamlName == imagName:
+                self.yamlIndx = idx
+                break
+
+        if self.yamlIndx is not None:
+            data = yaml.load(open(self.yamlList[self.yamlIndx], 'r'))
+            #checks if there is any annotation
+            if 'annotations' in data.keys():
+                #checks if the annotation is not empty
+                if data['annotations'] is not None:
+                    self.circ, self.poly, self.line, self.cons = parseAnnotationYaml(data)
+        else:
+            print "yaml not found"
 
     #### annotations
-   
- 
     def mouseClick(self, event):
-        print 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(
-            event.button, event.x, event.y, event.xdata, event.ydata)
+        # print 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(
+        #     event.button, event.x, event.y, event.xdata, event.ydata)
         self.temp.append([event.xdata, event.ydata])
+        if event.button == 2:
+            print 'I could wrap up evrything here, right?'
+            # self.grabAnnotation()
         
     def grabAnnotation(self):
         if self.ui.catPoly.isChecked():
@@ -290,6 +310,7 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         else:
             QtGui.QMessageBox.about(self, "error",
                                     """readCategory function says: no category?!!""")
+        self.resetAnnotation() # => self.temp = []
 
 
     def resetAnnotation(self):
@@ -308,7 +329,6 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         if cons is not None: self.myCanvas.plotCons(cons)
 
     def saveAnnotation2Yaml(self):
-
         ### preparing yaml and image names
         imagName = self.imagList[self.imagIndx].split('/')[-1]
         imagExtension = imagName.split('.')[-1]
@@ -343,17 +363,19 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
             annotations.append(d)
             
         ### setting data and saving yaml file
-        data = {'date':[time.localtime().tm_year,
-                        time.localtime().tm_mon,
-                        time.localtime().tm_mday],
+        data = {'date':[str(time.localtime().tm_year)+'-'+
+                        str(time.localtime().tm_mon)+'-'+
+                        str(time.localtime().tm_mday)],
                 'image': imagName,
                 'annotations': annotations}
         
         with open(yamlName, 'w') as outfile:
             outfile.write( yaml.dump(data, default_flow_style=False) )
 
-
-
+        ### Adding newly saved yaml file to the list
+        # self.yamlList.append(yamlName)
+        # self.yamlList.sort()
+        self.loadYamlLists()
 
     #### NAVIGATION functoins
     def navNext(self):

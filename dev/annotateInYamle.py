@@ -30,9 +30,13 @@ from matplotlib.collections import PatchCollection
 ##################### functions #####################
 #####################################################
 
+def key_value_gen(x,y,i):
+    yield 'p'+str(i+1)
+    yield str(x)+' , '+str(y)
+
 def parseAnnotationYaml(data):
     if 'annotations' in data.keys(): #checks if there is any annotation
-        if data['annotations'] != None: #checks if the annotation is not empty
+        if data['annotations'] is not None: #checks if the annotation is not empty
             ann = data['annotations']
             cir, pol, lin, con = [],[],[],[]
             for i in range(len(ann)):
@@ -64,10 +68,11 @@ def parseAnnotationYaml(data):
                     print "unknown category"
             return cir, pol, lin, con
         else:
-            return False
+            pass
     else:
-        return False
+        pass
 
+##############################################################
 def drawAnnotationPatch(patches, lines, constellations, annotation):
     keys , p = annotation.keys() , []
     while 'category' in keys: keys.remove('category')

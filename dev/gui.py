@@ -9,41 +9,26 @@ import PySide
 from PySide import QtCore, QtGui  # QtGui.QMainWindow, QtGui.QPushButton, QtGui.QApplication
 
 import isagt # isagt.Ui_MainWindow
-__version__ = '0.1'
+__version__ = '0.2'
 
 
-def parseAnnotationYaml(data):
-    ann = data['annotations']
-    cir, pol, lin, con = [],[],[],[]
-    for i in range(len(ann)):
-        # removing none point keys
-        keys , p = ann[i].keys() , []
-        while 'category' in keys: keys.remove('category')
-        while 'id' in keys: keys.remove('id')
-        if ann[i]['category'] == 'circle':
-            # cir = [ [cx1,cy1,r1], [cx2,cy2,r2], ... ]
-            c = [float(s) for s in ann[i]['cen'].split()
-                 if s.replace(".", "", 1).isdigit()]
-            cir.append([ c[0],c[1] , float(ann[i]['rad']) ])
-        elif ann[i]['category'] == 'polygon':
-            # pol = [ [[px1,py1], [px2,py2], ...] , ...]
-            for k in keys: p.append( [float(s) for s in ann[i][k].split()
-                                      if s.replace(".", "", 1).isdigit()] )
-            pol.append(p)
-        elif ann[i]['category'] == 'line':
-            # lin = [ [[px1,py1], [px2,py2]] , ...]
-            for k in keys: p.append( [float(s) for s in ann[i][k].split()
-                                      if s.replace(".", "", 1).isdigit()] )
-            lin.append(p)
-        elif ann[i]['category'] == 'constellation':
-            # con = [ [[px1,py1], [px2,py2], ...] , ...]
-            for k in keys: p.append( [float(s) for s in ann[i][k].split()
-                                      if s.replace(".", "", 1).isdigit()] )
-            con.append(p)
-        else:
-            print "unknown category"
-    return cir, pol, lin, con
-    
+# TODO - HP
+# put available annotations in the list field
+# how to remove an annotation if deleted
+# add id
+# extract circles from premeter points
+# unwrapping fishheye
+# highjack arrow keys# TODO: - MP
+# 1. when clicking a new point, it shoud be displayed in Red
+# 2. when annotation is grabbed, they should turn green
+# 3. loaded annotations in Blue
+
+# TODO: - LP
+# helpers
+# fix constellation plotting rescale problem
+# proper commenting for pydoc
+# while the sorting function is in use, it only supports convex polygon
+
 ##############################################################
 import matplotlib
 matplotlib.use('Qt4Agg')
@@ -56,15 +41,16 @@ import matplotlib.pyplot as plt
 
 import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
-from matplotlib.collections import PatchCollection
+from matplotlib.collections import PatchCollection      
 
 class MyMplCanvas(FigureCanvas):
-    """Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""
-
+    """
+    Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.).
+    But I connected this to graphicsView in the ui
+    """
     def __init__(self, parent=None, width=5, height=4, dpi=100):
         fig = Figure()#figsize=(width, height), dpi=dpi)
         self.axes = fig.add_subplot(111)
-        # We want the axes cleared every time plot() is called
         self.axes.hold(False)
         self.axes.axis('off')
 
@@ -84,9 +70,6 @@ class MyMplCanvas(FigureCanvas):
 
     def plotImage(self,image):
         self.axes.imshow(image, interpolation='nearest', origin='lower')
-        # cmap='gray', interpolation='bilinear',
-        # cmap=cm.RdYlGn, origin='lower',
-        # vmax=abs(image).max(), vmin=-abs(image).max()
         self.draw()
 
     def plotPoly(self, points):
@@ -118,15 +101,14 @@ class MyMplCanvas(FigureCanvas):
         self.draw()
         
     def plotCons(self, points):
-        # self.constellations.append(np.array(points))
-        # n = len(self.constellations)
-        # syms = [ 'ro','go','bo','ko' , 'r^','g^','b^','k^']
-        # for pts, mk in zip(self.constellations , syms[:n]):
-            # self.axes.plot(pts[:,0],pts[:,1] , mk)
-        # for pts in self.constellations: self.axes.scatter(pts[:,0], pts[:,1])
-        
-        # self.axes.scatter(np.array(points)[:,0], np.array(points)[:,1])
+        pts = np.array(points)
+        syms = [ 'ro','go','bo','ko',
+                 'r^','g^','b^','k^']
+        self.axes.hold(True)
+        self.axes.plot(pts[:,0],pts[:,1] , syms[0]) 
+        # self.axes.scatter(pts[:,0],pts[:,1])
         self.draw()
+        self.axes.hold(False)
 
 
 ##############################################################
@@ -137,7 +119,7 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         self.ui = isagt.Ui_MainWindow()
         self.ui.setupUi(self)
 
-        ######### Matplotlib Setting
+        ## Matplotlib Setting
         self.main_widget = self.ui.graphicsView #QtGui.QWidget(self)
         self.layout = QtGui.QVBoxLayout(self.main_widget)
         self.myCanvas = MyMplCanvas(self.main_widget)#, width=5, height=4, dpi=100)
@@ -146,7 +128,7 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         # self.setCentralWidget(self.main_widget)
         self.myCanvas.mpl_connect('button_press_event', self.mouseClick)
         
-        ######### Push buttons
+        ## Push buttons
         self.ui.loadButton.clicked.connect(self.loadFileLists)
         self.ui.aboutButton.clicked.connect(self.about)
         self.ui.navGoto.clicked.connect(self.navGoTo)
@@ -154,14 +136,24 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         self.ui.navPrev.clicked.connect(self.navPrev)
         self.ui.annotateAdd.clicked.connect(self.grabAnnotation)
         self.ui.annotateReset.clicked.connect(self.resetAnnotation)
-        ######### Radio buttons
+        ## Radio buttons
         self.ui.loadYaml.toggled.connect(self.startNewImage)
         self.ui.unwrapFlag.toggled.connect(self.startNewImage)
         self.ui.displayAnnotation.toggled.connect(self.startNewImage)
 
-        ######### 
+        ## 
         self.yamlList, self.imagList = None, None
+        self.sorting = True
         
+        self.annotationList = None
+        # self.ui.annotationList.clear(self)
+        # self.ui.annotationList.currentRow(self)
+        # self.ui.annotationList.currentItem(self)
+        # self.ui.annotationList.indexFromItem (self, QListWidgetItem item)
+        # self.ui.annotationList.insertItem (self, int row, QListWidgetItem item)
+        # self.ui.annotationList.insertItem (self, int row, QString label)
+        # self.ui.annotationList.insertItems (self, int row, QStringList labels)
+
     #### loading stage
     def loadFileLists(self):
         self.path = []
@@ -177,9 +169,9 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
 
         # sort file names into yamls and images
         # remove empty strings and none image files
-        yamlList, imagList = [], []
         yamlFormats = ['yaml', 'YAML', 'Yaml']
         imagFormats = ['.png', '.PNG', '.jpg', '.JPG', 'JPEG', 'jpeg', '.bmp']
+        yamlList, imagList = [], []
         for i in range(len(filesNames)-1,-1,-1):
             if len(filesNames[i]) == 0:
                 pass #filesNames.pop(i)
@@ -196,6 +188,7 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
             self.ui.groupAnnotation.setEnabled(True)
             self.ui.groupAnnotationList.setEnabled(True)
             self.ui.groupAnnotationID.setEnabled(True)
+            self.ui.annotationList
 
             # loading fileLists
             yamlList.sort(), imagList.sort()
@@ -229,6 +222,8 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         # such as "loadFileLists", "navGoTo"
         # be careful not to lock it up!
 
+        
+        self.annotationList = {}
         self.circ, self.poly, self.line, self.cons =[],[],[],[]
 
         ### setting navigation counter
@@ -238,7 +233,6 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         ### plotting the image
         image = cv2.imread(self.imagList[self.imagIndx])
         if self.ui.unwrapFlag.isChecked():
-            #TODO
             if self.ui.unwrapOption.currentText() == 'Fisheye - Downward':
                 pass # unrwape image
             elif self.ui.unwrapOption.currentText() == 'Fisheye - Forward':
@@ -251,11 +245,17 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         ### Loading Yaml file
         if self.ui.loadYaml.isChecked():
            self.loadYamlFile()
+
+        #TODO: update the self.annotationList
+
+
         ### plot available annotations
         if self.ui.displayAnnotation.isChecked():
             self.plotAllAnnotations()
         ### initializing-emptying the temp list
         self.resetAnnotation() # => self.temp = []
+
+        
         
     def loadYamlFile(self):
         self.yamlIndx =  None
@@ -274,10 +274,53 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
             if 'annotations' in data.keys():
                 #checks if the annotation is not empty
                 if data['annotations'] is not None:
-                    self.circ, self.poly, self.line, self.cons = parseAnnotationYaml(data)
+                    self.circ, self.poly, self.line, self.cons = self.parseYaml(data)
         else:
             print "yaml not found"
 
+    def parseYaml(self, data):
+        ann = data['annotations']
+        cir, pol, lin, con = [],[],[],[]
+        for i in range(len(ann)):
+            # removing none point keys
+            keys , p = ann[i].keys() , []
+
+            while 'category' in keys: keys.remove('category')
+            while 'id' in keys: keys.remove('id')
+
+            if ann[i]['category'] == 'circle':
+                # cir = [ [cx1,cy1,r1], [cx2,cy2,r2], ... ]
+                c = [float(s) for s in ann[i]['cen'].split()
+                     if s.replace(".", "", 1).isdigit()]
+                cir.append([ c[0],c[1] , float(ann[i]['rad']) ])
+
+            elif ann[i]['category'] == 'polygon':
+                # pol = [ [[px1,py1], [px2,py2], ...] , ...]
+                for k in keys: p.append( [float(s) for s in ann[i][k].split()
+                                          if s.replace(".", "", 1).isdigit()] )
+                if self.sorting ==True:
+                    pol.append(self.sortPointsCCW(p))
+                else:
+                    pol.append(p)
+
+            elif ann[i]['category'] == 'line':
+                # lin = [ [[px1,py1], [px2,py2]] , ...]
+                for k in keys: p.append( [float(s) for s in ann[i][k].split()
+                                          if s.replace(".", "", 1).isdigit()] )
+                lin.append(p)
+
+            elif ann[i]['category'] == 'constellation':
+                # con = [ [[px1,py1], [px2,py2], ...] , ...]
+                for k in keys: p.append( [float(s) for s in ann[i][k].split()
+                                          if s.replace(".", "", 1).isdigit()] )
+                con.append(p)
+
+            else:
+                print "unknown category"
+        return cir, pol, lin, con
+
+
+            
     #### annotations
     def mouseClick(self, event):
         # print 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(
@@ -288,14 +331,15 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
             # self.grabAnnotation()
         
     def grabAnnotation(self):
+        
         if self.ui.catPoly.isChecked():
-            # TODO: sort points in correct order
-            self.poly.append(self.temp)
+            if self.sorting == True:
+                self.poly.append( self.sortPointsCCW(self.temp) )
+            else:
+                self.poly.append( self.temp )
             self.plotAnnotations(poly=self.poly[-1])
 
         elif self.ui.catConstellation.isChecked():
-            # TODO: sort points in correct order
-            self.cons.append(self.temp)
             self.plotAnnotations(cons=self.cons[-1])
 
         elif self.ui.catLine.isChecked():
@@ -311,6 +355,9 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
             QtGui.QMessageBox.about(self, "error",
                                     """readCategory function says: no category?!!""")
         self.resetAnnotation() # => self.temp = []
+
+        #TODO: update the self.annotationList
+        self.ui.annotationList
 
 
     def resetAnnotation(self):
@@ -341,7 +388,7 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
                                 'cen': str(x)+' , '+str(y),
                                 'rad': r,
                                 'id': None})
-            
+        
         for pts in self.poly:
             d = {'p'+str(i+1):str(pts[i][0])+' , '+str(pts[i][1])
                  for i in range(len(pts))}
@@ -409,6 +456,26 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
 
 
     #### MISC
+    def sortPointsCCW(self, points):
+        
+        def dis (p1,p2):
+            return np.sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
+
+        # removing collocating points 
+        for i in range(len(points)-1,-1,-1):
+            for j in range(i-1,-1,-1):
+                if dis(points[i],points[j])<np.spacing(1):
+                    points.pop(i)
+                    break                
+
+        # Sorting 
+        pts = np.array(points)
+        cen = np.mean(pts,axis=0)
+        angle2pts = [np.arctan2(p[1]-cen[1], p[0]-cen[0])
+                     for p in np.array(pts)]
+        return np.array([v for (t,v) in sorted(zip(angle2pts,pts))])
+
+
     def about(self):
         QtGui.QMessageBox.about(self, "About Image Semantic Annotation for Ground Truth",
                                 """<b>Version</b> %s

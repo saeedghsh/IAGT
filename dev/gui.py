@@ -1,7 +1,8 @@
-import sys, os, platform
-import time
-import thread
+import sys, os, platform, time
+
 import numpy as np
+import numpy.linalg
+
 import cv2
 import yaml
 
@@ -13,15 +14,9 @@ __version__ = '0.2'
 
 
 # TODO - HP
-# put available annotations in the list field
-# how to remove an annotation if deleted
-# add id
+# add the id of each annotations
 # extract circles from premeter points
 # unwrapping fishheye
-# highjack arrow keys# TODO: - MP
-# 1. when clicking a new point, it shoud be displayed in Red
-# 2. when annotation is grabbed, they should turn green
-# 3. loaded annotations in Blue
 
 # TODO: - LP
 # helpers
@@ -100,12 +95,13 @@ class MyMplCanvas(FigureCanvas):
                                          alpha=self.AnnotationAlpha))
         self.draw()
         
-    def plotCons(self, points):
+    def plotCons(self, points, symbolID=1):
         pts = np.array(points)
         syms = [ 'ro','go','bo','ko',
-                 'r^','g^','b^','k^']
+                 'r*','g*','b*','k*',
+                 'r^','g^','b^','k^',]
         self.axes.hold(True)
-        self.axes.plot(pts[:,0],pts[:,1] , syms[0]) 
+        self.axes.plot(pts[:,0],pts[:,1] , syms[symbolID]) 
         # self.axes.scatter(pts[:,0],pts[:,1])
         self.draw()
         self.axes.hold(False)
@@ -136,6 +132,7 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         self.ui.navPrev.clicked.connect(self.navPrev)
         self.ui.annotateAdd.clicked.connect(self.grabAnnotation)
         self.ui.annotateReset.clicked.connect(self.resetAnnotation)
+        self.ui.annotationRemove.clicked.connect(self.annotationRemove)
         ## Radio buttons
         self.ui.loadYaml.toggled.connect(self.startNewImage)
         self.ui.unwrapFlag.toggled.connect(self.startNewImage)
@@ -149,6 +146,7 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         # self.ui.annotationList.clear(self)
         # self.ui.annotationList.currentRow(self)
         # self.ui.annotationList.currentItem(self)
+        # self.ui.annotationList.clicked
         # self.ui.annotationList.indexFromItem (self, QListWidgetItem item)
         # self.ui.annotationList.insertItem (self, int row, QListWidgetItem item)
         # self.ui.annotationList.insertItem (self, int row, QString label)
@@ -218,10 +216,6 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         self.yamlList = yamlList
 
     def startNewImage(self):
-        # this function is [always?] hosted by other functins
-        # such as "loadFileLists", "navGoTo"
-        # be careful not to lock it up!
-
         
         self.annotationList = {}
         self.circ, self.poly, self.line, self.cons =[],[],[],[]
@@ -246,15 +240,14 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         if self.ui.loadYaml.isChecked():
            self.loadYamlFile()
 
-        #TODO: update the self.annotationList
-
+        ### update the self.annotationList
+        self.updateAnnotationList()        
 
         ### plot available annotations
         if self.ui.displayAnnotation.isChecked():
             self.plotAllAnnotations()
         ### initializing-emptying the temp list
         self.resetAnnotation() # => self.temp = []
-
         
         
     def loadYamlFile(self):
@@ -326,9 +319,13 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         # print 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(
         #     event.button, event.x, event.y, event.xdata, event.ydata)
         self.temp.append([event.xdata, event.ydata])
+
+        # drawing temp points
+        self.myCanvas.plotCons([[event.xdata, event.ydata]], symbolID=4)
+        
         if event.button == 2:
-            print 'I could wrap up evrything here, right?'
-            # self.grabAnnotation()
+            print 'I could wrap up everything here, right?'
+            self.grabAnnotation()
         
     def grabAnnotation(self):
         
@@ -340,6 +337,7 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
             self.plotAnnotations(poly=self.poly[-1])
 
         elif self.ui.catConstellation.isChecked():
+            self.cons.append(self.temp)
             self.plotAnnotations(cons=self.cons[-1])
 
         elif self.ui.catLine.isChecked():
@@ -347,19 +345,82 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
             self.plotAnnotations(line=self.line[-1])
 
         elif self.ui.catCircle.isChecked():
-            # TODO: solve the equation
-            self.circ.append(self.temp)
+            if len(self.temp) == 2:
+                # if 2 points are given, the 1st is the center and 2nd is on the perimeter
+                [x0,y0] , [x1,y1] = self.temp[0] , self.temp[1]
+                r = np.sqrt( (x0-x1)**2 + (y0-y1)**2 )
+                
+            elif len(self.temp) > 2:
+                # if 3 points are given, they are all considered on the perimeter
+                [x1,y1], [x2,y2], [x3,y3] = self.temp[0] , self.temp[1], self.temp[2]
+                a = numpy.linalg.det([ [x1,y1,1], [x2,y2,1], [x3,y3,1] ])
+                d =-numpy.linalg.det([ [x1**2+y1**2,y1,1], [x2**2+y2**2,y2,1], [x3**2+y3**2,y3,1] ])
+                e = numpy.linalg.det([ [x1**2+y1**2,x1,1], [x2**2+y2**2,x2,1], [x3**2+y3**2,x3,1] ])
+                f =-numpy.linalg.det([ [x1**2+y1**2,x1,y1], [x2**2+y2**2,x2,y2], [x3**2+y3**2,x3,y3] ])
+                x0, y0 = -d/(2*a) , -e/(2*a)
+                r = np.sqrt( ((d**2 + e**2)/4*a**2) - (f/a))
+
+            self.circ.append([x0,y0,r])
             self.plotAnnotations(circ=self.circ[-1])
 
-        else:
-            QtGui.QMessageBox.about(self, "error",
-                                    """readCategory function says: no category?!!""")
         self.resetAnnotation() # => self.temp = []
+        self.updateAnnotationList()
+        self.resetDrawing()
+        
+    def updateAnnotationList (self):
 
-        #TODO: update the self.annotationList
-        self.ui.annotationList
+        self.ui.annotationList.clear()
+        
+        idx = 0
+        for (obj,i) in zip(self.circ, range(len(self.circ))):
+            string =  'circle#'+str(i)+': '
+            string = string + ' c=('+str(obj[0])+','+str(obj[1])+') , r='+str(obj[2])
+            self.ui.annotationList.insertItem(idx, string)
+            idx=+1
+
+        for (obj,i) in zip(self.poly,range(len(self.poly))):
+            string = 'polygon#' + str(i) + ': ' + str(len(obj)) + ' points'
+            self.ui.annotationList.insertItem(idx, string)
+            idx=+1
+                           
+        for (obj,i) in zip(self.line,range(len(self.line))):
+            string =  'line#' + str(i)+': '
+            string = string + 'p1(' + str(obj[0][0]) + ',' + str(obj[0][1])
+            string = string + 'p2(' + str(obj[1][0]) + ',' + str(obj[1][1])
+            self.ui.annotationList.insertItem(idx, string)
+            idx=+1
+
+        for (obj,i) in zip(self.cons,range(len(self.cons))):
+            string = 'constalation#' + str(i) + ': ' + str(len(obj)) + ' points'
+            self.ui.annotationList.insertItem(idx, string)
+            idx=+1
 
 
+    def annotationRemove(self):
+        # idx = self.ui.annotationList.currentRow()        
+        listItem = mySW.ui.annotationList.currentItem()
+        text = listItem.text()
+        idx = int(text[text.find('#')+1 : text.find(':')])
+        
+        if text[:4] == 'circ':
+            self.circ.pop(idx)
+        elif text[:4] == 'poly':
+            self.poly.pop(idx)
+        elif text[:4] == 'line':
+            self.line.pop(idx)
+        elif text[:4] == 'cons':
+            self.cons.pop(idx)
+
+        self.updateAnnotationList()
+        self.resetDrawing()
+
+    def resetDrawing(self):
+        self.myCanvas.axes.cla()
+        self.myCanvas.plotImage(self.image)
+        
+        if self.ui.displayAnnotation.isChecked():
+            self.plotAllAnnotations()
+            
     def resetAnnotation(self):
         self.temp = []
 
@@ -425,14 +486,8 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         self.loadYamlLists()
 
     #### NAVIGATION functoins
-    def navNext(self):
-        # TODO: remove this function and connect the Next Button directly to "NavGoTo"
-        self.navGoTo(mode='next')
-
-    def navPrev(self):
-        # TODO: remove this function and connect the Prev Button directly to "NavGoTo"
-        self.navGoTo(mode='prev')
-
+    def navNext(self): self.navGoTo(mode='next')
+    def navPrev(self): self.navGoTo(mode='prev')
     def navGoTo(self, mode='goto'):
         self.saveAnnotation2Yaml()
         
@@ -461,10 +516,11 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         def dis (p1,p2):
             return np.sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
 
-        # removing collocating points 
+        # removing collocating points within the range
+        tolerance = 2 #np.spacing(1)
         for i in range(len(points)-1,-1,-1):
             for j in range(i-1,-1,-1):
-                if dis(points[i],points[j])<np.spacing(1):
+                if dis(points[i],points[j]) < tolerance:
                     points.pop(i)
                     break                
 

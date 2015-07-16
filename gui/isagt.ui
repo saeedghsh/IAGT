@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1069</width>
-    <height>715</height>
+    <width>1263</width>
+    <height>958</height>
    </rect>
   </property>
   <property name="mouseTracking">
@@ -20,7 +20,11 @@
    <bool>true</bool>
   </property>
   <property name="windowTitle">
-   <string>Image Geometric Annotation for Ground Truth</string>
+   <string>Image Annotation for Ground Truth</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>icon.png</normaloff>icon.png</iconset>
   </property>
   <property name="autoFillBackground">
    <bool>true</bool>
@@ -47,15 +51,21 @@
      <rect>
       <x>10</x>
       <y>100</y>
-      <width>781</width>
-      <height>491</height>
+      <width>931</width>
+      <height>741</height>
      </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
     </property>
    </widget>
    <widget class="QRadioButton" name="loadYaml">
     <property name="geometry">
      <rect>
-      <x>280</x>
+      <x>320</x>
       <y>10</y>
       <width>191</width>
       <height>31</height>
@@ -74,9 +84,9 @@
    <widget class="QTextBrowser" name="textAddress">
     <property name="geometry">
      <rect>
-      <x>210</x>
+      <x>260</x>
       <y>60</y>
-      <width>581</width>
+      <width>681</width>
       <height>31</height>
      </rect>
     </property>
@@ -112,7 +122,7 @@
      <rect>
       <x>10</x>
       <y>40</y>
-      <width>1051</width>
+      <width>1241</width>
       <height>20</height>
      </rect>
     </property>
@@ -146,7 +156,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>600</y>
+      <y>850</y>
       <width>271</width>
       <height>41</height>
      </rect>
@@ -228,8 +238,8 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>290</x>
-      <y>600</y>
+      <x>350</x>
+      <y>850</y>
       <width>291</width>
       <height>61</height>
      </rect>
@@ -293,8 +303,8 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>600</x>
-      <y>600</y>
+      <x>710</x>
+      <y>850</y>
       <width>191</width>
       <height>61</height>
      </rect>
@@ -332,8 +342,8 @@
    <widget class="Line" name="line_3">
     <property name="geometry">
      <rect>
-      <x>580</x>
-      <y>590</y>
+      <x>670</x>
+      <y>840</y>
       <width>20</width>
       <height>71</height>
      </rect>
@@ -345,8 +355,8 @@
    <widget class="Line" name="line_4">
     <property name="geometry">
      <rect>
-      <x>270</x>
-      <y>590</y>
+      <x>300</x>
+      <y>840</y>
       <width>20</width>
       <height>71</height>
      </rect>
@@ -361,10 +371,10 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>810</x>
+      <x>960</x>
       <y>60</y>
-      <width>261</width>
-      <height>551</height>
+      <width>301</width>
+      <height>831</height>
      </rect>
     </property>
     <property name="title">
@@ -375,7 +385,7 @@
       <rect>
        <x>0</x>
        <y>20</y>
-       <width>251</width>
+       <width>291</width>
        <height>401</height>
       </rect>
      </property>
@@ -385,7 +395,7 @@
       <rect>
        <x>0</x>
        <y>430</y>
-       <width>251</width>
+       <width>291</width>
        <height>27</height>
       </rect>
      </property>
@@ -398,7 +408,7 @@
       <rect>
        <x>10</x>
        <y>460</y>
-       <width>231</width>
+       <width>281</width>
        <height>91</height>
       </rect>
      </property>
@@ -410,7 +420,7 @@
        <rect>
         <x>0</x>
         <y>20</y>
-        <width>231</width>
+        <width>271</width>
         <height>31</height>
        </rect>
       </property>
@@ -418,9 +428,9 @@
      <widget class="QPushButton" name="annotationIdAdd">
       <property name="geometry">
        <rect>
-        <x>0</x>
+        <x>10</x>
         <y>60</y>
-        <width>98</width>
+        <width>121</width>
         <height>27</height>
        </rect>
       </property>
@@ -431,9 +441,9 @@
      <widget class="QPushButton" name="annotationIdDelete">
       <property name="geometry">
        <rect>
-        <x>130</x>
+        <x>147</x>
         <y>60</y>
-        <width>98</width>
+        <width>121</width>
         <height>27</height>
        </rect>
       </property>
@@ -446,10 +456,10 @@
    <widget class="Line" name="line_5">
     <property name="geometry">
      <rect>
-      <x>790</x>
+      <x>940</x>
       <y>60</y>
       <width>20</width>
-      <height>601</height>
+      <height>841</height>
      </rect>
     </property>
     <property name="orientation">
@@ -459,7 +469,7 @@
    <widget class="QPushButton" name="aboutButton">
     <property name="geometry">
      <rect>
-      <x>960</x>
+      <x>1150</x>
       <y>10</y>
       <width>98</width>
       <height>27</height>
@@ -470,9 +480,12 @@
     </property>
    </widget>
    <widget class="QComboBox" name="unwrapOption">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="geometry">
      <rect>
-      <x>630</x>
+      <x>700</x>
       <y>10</y>
       <width>171</width>
       <height>31</height>
@@ -498,9 +511,12 @@
     </item>
    </widget>
    <widget class="QRadioButton" name="unwrapFlag">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="geometry">
      <rect>
-      <x>490</x>
+      <x>560</x>
       <y>10</y>
       <width>151</width>
       <height>31</height>
@@ -510,23 +526,10 @@
      <string>Unrwap image(s)</string>
     </property>
     <property name="checked">
-     <bool>true</bool>
+     <bool>false</bool>
     </property>
     <property name="autoExclusive">
      <bool>false</bool>
-    </property>
-   </widget>
-   <widget class="Line" name="line_2">
-    <property name="geometry">
-     <rect>
-      <x>810</x>
-      <y>610</y>
-      <width>251</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="orientation">
-     <enum>Qt::Horizontal</enum>
     </property>
    </widget>
    <widget class="QPushButton" name="AdvanceOptionS">
@@ -535,9 +538,9 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>840</x>
+      <x>897</x>
       <y>10</y>
-      <width>98</width>
+      <width>161</width>
       <height>27</height>
      </rect>
     </property>
@@ -551,7 +554,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1069</width>
+     <width>1263</width>
      <height>25</height>
     </rect>
    </property>

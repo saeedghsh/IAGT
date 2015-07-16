@@ -148,6 +148,7 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
                 pass # unrwape image
             elif self.ui.unwrapOption.currentText() == 'OminCam':
                 pass # unrwape image
+        else:
             self.image = image
         self.myCanvas.plotImage(self.image)        
 
@@ -394,14 +395,13 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
                         str(time.localtime().tm_mday)],
                 'image': imagName,
                 'annotations': annotations}
-        
-        with open(yamlName, 'w') as outfile:
-            outfile.write( yaml.dump(data, default_flow_style=False) )
 
-        ### Adding newly saved yaml file to the list
-        # self.yamlList.append(yamlName)
-        # self.yamlList.sort()
-        self.loadYamlLists()
+        if len(annotations) != 0:
+            with open(yamlName, 'w') as outfile:
+                outfile.write( yaml.dump(data, default_flow_style=False) )
+
+            ### Adding newly saved yaml file to the list
+            self.loadYamlLists()
 
     #########################################################################
     ############################# Navigations ###############################
@@ -455,7 +455,7 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
 
 
     def about(self):
-        QtGui.QMessageBox.about(self, "About Image Semantic Annotation for Ground Truth",
+        QtGui.QMessageBox.about(self, "About Image Annotation for Ground Truth",
                                 """<b>Version</b> %s
                                 <p>Copyright &copy; 2015 Saeed Gholami Shahbandi.
                                 All rights reserved in accordance with

@@ -24,25 +24,25 @@ import myWindowLib as MWL
 
 __version__ = '0.9'
 
-# TODO - HP
-# why the image is upside down?
-# unwrapping fishheye
-# truncate the numbers in the annotation list
-
-# TODO: - LP
-# helpers
-# add zooming
-# proper commenting for pydoc
-
-
-
-
-##############################################################
-
 # if ''name'' == "''main''":
 app = QtGui.QApplication(sys.argv)
 mySW = MWL.MainWindow()
 mySW.show()
 app.exec_()
 # sys.exit(app.exec_())
+
+
+
+# TODO - HP
+# why the image is upside down?
+# unwrapping fishheye
+# allow window resize
+# list dependencies and installation instructions for different platform
+# creat visual instructions.
+
+# TODO: - LP
+# helpers
+# add zooming
+# proper commenting for pydoc
+
 

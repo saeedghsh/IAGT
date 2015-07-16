@@ -42,8 +42,8 @@ class MyMplCanvas(FigureCanvas):
     def __init__(self, parent=None, width=5, height=4, dpi=100):
         fig = Figure()#figsize=(width, height), dpi=dpi)
         self.axes = fig.add_subplot(111)
+        self.axes.axis('off')        
         self.axes.hold(False)
-        self.axes.axis('off')
 
         FigureCanvas.__init__(self, fig)
         self.setParent(parent)
@@ -75,7 +75,7 @@ class MyMplCanvas(FigureCanvas):
         if idx is not None:
             x0 = np.array(points)[:,0].mean()
             y0 = np.array(points)[:,1].mean()
-            self.axes.text(x0,y0, str(idx) , style='italic', fontsize=15)
+            self.axes.text(x0,y0, str(idx), fontsize=15)
 
         self.draw()
         
@@ -89,7 +89,7 @@ class MyMplCanvas(FigureCanvas):
         self.axes.add_collection(collection)
 
         if idx is not None:
-            self.axes.text(cx,cy, str(idx) , style='italic', fontsize=15)
+            self.axes.text(cx,cy, str(idx) , fontsize=15)
 
         self.draw()
         
@@ -102,7 +102,7 @@ class MyMplCanvas(FigureCanvas):
         if idx is not None:
             x0 = np.array(points)[:,0].mean()
             y0 = np.array(points)[:,1].mean()
-            self.axes.text(x0,y0, str(idx) , style='italic', fontsize=15)
+            self.axes.text(x0,y0, str(idx) , fontsize=15)
             
         self.draw()
         
@@ -118,7 +118,7 @@ class MyMplCanvas(FigureCanvas):
         if idx is not None:
             x0 = np.array(points)[:,0].mean()
             y0 = np.array(points)[:,1].mean()
-            self.axes.text(x0,y0, str(idx) , style='italic', fontsize=15)
+            self.axes.text(x0,y0, str(idx) , fontsize=15)
 
         self.draw()
         self.axes.hold(False)

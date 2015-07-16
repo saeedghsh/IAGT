@@ -1,4 +1,16 @@
-annotations: []
+annotations:
+- category: circle
+  cen: 463.323646497 , 462.636942675
+  id: null
+  rad: 92.91397120470342
+- category: circle
+  cen: 839.560806894 , 432.079658041
+  id: null
+  rad: 129.41667735528216
+- category: circle
+  cen: 601.325976732 , 433.279531334
+  id: null
+  rad: 404.3577622321514
 date:
-- 2015-6-29
+- 2015-7-16
 image: !!python/unicode 'STEP sample image.jpg'

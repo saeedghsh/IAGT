@@ -1,113 +1,37 @@
+# "
+# Copyright (C) 2015 Saeed Gholami Shahbandi. All rights reserved.
+
+# This program is free software: you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public License
+# as published by the Free Software Foundation, either version 3 of
+# the License, or (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public
+# License along with this program. If not, see
+# <http://www.gnu.org/licenses/>
+# "
+
 import sys, os, platform, time
 
 import numpy as np
-import numpy.linalg
+from numpy.linalg import det
 
 import cv2
 import yaml
 
 import PySide
-from PySide import QtCore, QtGui  # QtGui.QMainWindow, QtGui.QPushButton, QtGui.QApplication
+from PySide import QtCore, QtGui
 
+sys.path.append('../gui/')
 import isagt # isagt.Ui_MainWindow
-__version__ = '0.2'
+import myCanvasLib as MCL
+reload(MCL)
 
-
-# TODO - HP
-# add the id of each annotations
-# extract circles from premeter points
-# unwrapping fishheye
-
-# TODO: - LP
-# helpers
-# fix constellation plotting rescale problem
-# proper commenting for pydoc
-# while the sorting function is in use, it only supports convex polygon
-
-##############################################################
-import matplotlib
-matplotlib.use('Qt4Agg')
-matplotlib.rcParams['backend.qt4']='PySide'
-import pylab
-
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
-
-import matplotlib.lines as mlines
-import matplotlib.patches as mpatches
-from matplotlib.collections import PatchCollection      
-
-class MyMplCanvas(FigureCanvas):
-    """
-    Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.).
-    But I connected this to graphicsView in the ui
-    """
-    def __init__(self, parent=None, width=5, height=4, dpi=100):
-        fig = Figure()#figsize=(width, height), dpi=dpi)
-        self.axes = fig.add_subplot(111)
-        self.axes.hold(False)
-        self.axes.axis('off')
-
-        FigureCanvas.__init__(self, fig)
-        self.setParent(parent)
-        FigureCanvas.setSizePolicy(self, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
-        FigureCanvas.updateGeometry(self)
-
-        # fig.canvas.mpl_connect('button_press_event', self.onclick)
-
-        self.AnnotationAlpha = 0.4
-        
-        self.patches, self.lines,  = [],[]
-        self.constellations = []
-        self.draw()
-
-
-    def plotImage(self,image):
-        self.axes.imshow(image, interpolation='nearest', origin='lower')
-        self.draw()
-
-    def plotPoly(self, points):
-        # colors = 100*np.random.rand(len(self.patches))
-        collection = PatchCollection([mpatches.Polygon(np.array(points),
-                                                       ec="none")],
-                                     alpha=self.AnnotationAlpha)
-        # collection.set_array(np.array(colors))
-        self.axes.add_collection(collection)
-
-        self.draw()
-        
-    def plotCirc(self, circ):
-        [cx,cy,r] = circ
-        # colors = 100*np.random.rand(len(self.patches))
-        collection = PatchCollection([mpatches.Circle(np.array([cx,cy]),
-                                                      r, ec="none")],
-                                     alpha=self.AnnotationAlpha)
-        # collection.set_array(np.array(colors))
-        self.axes.add_collection(collection)
-
-        self.draw()
-        
-    def plotLine(self, points):
-        self.axes.add_line(mlines.Line2D(np.array(points)[:,0],
-                                         np.array(points)[:,1],
-                                         lw=1.,
-                                         alpha=self.AnnotationAlpha))
-        self.draw()
-        
-    def plotCons(self, points, symbolID=1):
-        pts = np.array(points)
-        syms = [ 'ro','go','bo','ko',
-                 'r*','g*','b*','k*',
-                 'r^','g^','b^','k^',]
-        self.axes.hold(True)
-        self.axes.plot(pts[:,0],pts[:,1] , syms[symbolID]) 
-        # self.axes.scatter(pts[:,0],pts[:,1])
-        self.draw()
-        self.axes.hold(False)
-
-
-##############################################################
 
 class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
     def __init__(self, parent=None):
@@ -118,7 +42,7 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         ## Matplotlib Setting
         self.main_widget = self.ui.graphicsView #QtGui.QWidget(self)
         self.layout = QtGui.QVBoxLayout(self.main_widget)
-        self.myCanvas = MyMplCanvas(self.main_widget)#, width=5, height=4, dpi=100)
+        self.myCanvas = MCL.MyMplCanvas(self.main_widget)#, width=5, height=4, dpi=100)
         self.layout.addWidget(self.myCanvas)
         self.main_widget.setFocus()
         # self.setCentralWidget(self.main_widget)
@@ -141,18 +65,10 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         ## 
         self.yamlList, self.imagList = None, None
         self.sorting = True
-        
-        self.annotationList = None
-        # self.ui.annotationList.clear(self)
-        # self.ui.annotationList.currentRow(self)
-        # self.ui.annotationList.currentItem(self)
-        # self.ui.annotationList.clicked
-        # self.ui.annotationList.indexFromItem (self, QListWidgetItem item)
-        # self.ui.annotationList.insertItem (self, int row, QListWidgetItem item)
-        # self.ui.annotationList.insertItem (self, int row, QString label)
-        # self.ui.annotationList.insertItems (self, int row, QStringList labels)
 
-    #### loading stage
+    #########################################################################
+    ############################ Loading Stage ##############################
+    #########################################################################
     def loadFileLists(self):
         self.path = []
         # Loading file(s) name(s)
@@ -217,7 +133,6 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
 
     def startNewImage(self):
         
-        self.annotationList = {}
         self.circ, self.poly, self.line, self.cons =[],[],[],[]
 
         ### setting navigation counter
@@ -240,7 +155,7 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         if self.ui.loadYaml.isChecked():
            self.loadYamlFile()
 
-        ### update the self.annotationList
+        ### update 
         self.updateAnnotationList()        
 
         ### plot available annotations
@@ -314,7 +229,9 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
 
 
             
-    #### annotations
+    #########################################################################
+    ############################# Annotations ###############################
+    #########################################################################
     def mouseClick(self, event):
         # print 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(
         #     event.button, event.x, event.y, event.xdata, event.ydata)
@@ -325,56 +242,55 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         
         if event.button == 2:
             print 'I could wrap up everything here, right?'
-            self.grabAnnotation()
+            # self.grabAnnotation()
         
-    def grabAnnotation(self):
-        
+    def grabAnnotation(self):        
         if self.ui.catPoly.isChecked():
             if self.sorting == True:
                 self.poly.append( self.sortPointsCCW(self.temp) )
             else:
                 self.poly.append( self.temp )
-            self.plotAnnotations(poly=self.poly[-1])
+            self.plotAnnotations(poly=self.poly[-1], polyIdx=len(self.poly))
 
         elif self.ui.catConstellation.isChecked():
             self.cons.append(self.temp)
-            self.plotAnnotations(cons=self.cons[-1])
+            self.plotAnnotations(cons=self.cons[-1], consIdx=len(self.cons))
 
         elif self.ui.catLine.isChecked():
             self.line.append(self.temp)
-            self.plotAnnotations(line=self.line[-1])
+            self.plotAnnotations(line=self.line[-1], lineIdx=len(self.line))
 
         elif self.ui.catCircle.isChecked():
             if len(self.temp) == 2:
                 # if 2 points are given, the 1st is the center and 2nd is on the perimeter
                 [x0,y0] , [x1,y1] = self.temp[0] , self.temp[1]
-                r = np.sqrt( (x0-x1)**2 + (y0-y1)**2 )
-                
+                r = np.sqrt( (x0-x1)**2 + (y0-y1)**2 )                
             elif len(self.temp) > 2:
                 # if 3 points are given, they are all considered on the perimeter
+                # http://mathworld.wolfram.com/Circle.html
                 [x1,y1], [x2,y2], [x3,y3] = self.temp[0] , self.temp[1], self.temp[2]
-                a = numpy.linalg.det([ [x1,y1,1], [x2,y2,1], [x3,y3,1] ])
-                d =-numpy.linalg.det([ [x1**2+y1**2,y1,1], [x2**2+y2**2,y2,1], [x3**2+y3**2,y3,1] ])
-                e = numpy.linalg.det([ [x1**2+y1**2,x1,1], [x2**2+y2**2,x2,1], [x3**2+y3**2,x3,1] ])
-                f =-numpy.linalg.det([ [x1**2+y1**2,x1,y1], [x2**2+y2**2,x2,y2], [x3**2+y3**2,x3,y3] ])
+                a = np.array([ [x1,y1,1], [x2,y2,1], [x3,y3,1] ])
+                d = np.array([ [x1**2+y1**2,y1,1], [x2**2+y2**2,y2,1], [x3**2+y3**2,y3,1] ])
+                e = np.array([ [x1**2+y1**2,x1,1], [x2**2+y2**2,x2,1], [x3**2+y3**2,x3,1] ])
+                f = np.array([ [x1**2+y1**2,x1,y1], [x2**2+y2**2,x2,y2], [x3**2+y3**2,x3,y3] ])
+                a,d,e,f = det(a), -det(d), det(e), -det(f)
                 x0, y0 = -d/(2*a) , -e/(2*a)
-                r = np.sqrt( ((d**2 + e**2)/4*a**2) - (f/a))
-
+                r = np.sqrt( ((d**2 + e**2)/ (4*(a**2))) - (f/a))
+            
             self.circ.append([x0,y0,r])
-            self.plotAnnotations(circ=self.circ[-1])
+            self.plotAnnotations(circ=self.circ[-1], circIdx=len(self.circ))
 
         self.resetAnnotation() # => self.temp = []
         self.updateAnnotationList()
         self.resetDrawing()
         
     def updateAnnotationList (self):
-
         self.ui.annotationList.clear()
         
         idx = 0
         for (obj,i) in zip(self.circ, range(len(self.circ))):
-            string =  'circle#'+str(i)+': '
-            string = string + ' c=('+str(obj[0])+','+str(obj[1])+') , r='+str(obj[2])
+            string =  'circle#'+str(i)# +': '
+            # string = string + ' c=('+str(obj[0])+','+str(obj[1])+') , r='+str(obj[2])
             self.ui.annotationList.insertItem(idx, string)
             idx=+1
 
@@ -384,9 +300,9 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
             idx=+1
                            
         for (obj,i) in zip(self.line,range(len(self.line))):
-            string =  'line#' + str(i)+': '
-            string = string + 'p1(' + str(obj[0][0]) + ',' + str(obj[0][1])
-            string = string + 'p2(' + str(obj[1][0]) + ',' + str(obj[1][1])
+            string =  'line#' + str(i)# +': '
+            # string = string + 'p1(' + str(obj[0][0]) + ',' + str(obj[0][1])
+            # string = string + 'p2(' + str(obj[1][0]) + ',' + str(obj[1][1])
             self.ui.annotationList.insertItem(idx, string)
             idx=+1
 
@@ -394,11 +310,12 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
             string = 'constalation#' + str(i) + ': ' + str(len(obj)) + ' points'
             self.ui.annotationList.insertItem(idx, string)
             idx=+1
-
+            
+        self.ui.annotationList.sortItems()
 
     def annotationRemove(self):
         # idx = self.ui.annotationList.currentRow()        
-        listItem = mySW.ui.annotationList.currentItem()
+        listItem = self.ui.annotationList.currentItem()
         text = listItem.text()
         idx = int(text[text.find('#')+1 : text.find(':')])
         
@@ -417,7 +334,6 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
     def resetDrawing(self):
         self.myCanvas.axes.cla()
         self.myCanvas.plotImage(self.image)
-        
         if self.ui.displayAnnotation.isChecked():
             self.plotAllAnnotations()
             
@@ -425,16 +341,18 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         self.temp = []
 
     def plotAllAnnotations(self):
-        for obj in self.circ: self.myCanvas.plotCirc(obj)
-        for obj in self.poly: self.myCanvas.plotPoly(obj)
-        for obj in self.line: self.myCanvas.plotLine(obj)
-        for obj in self.cons: self.myCanvas.plotCons(obj)
+        for idx in range(len(self.circ)): self.myCanvas.plotCirc(self.circ[idx],idx)
+        for idx in range(len(self.poly)): self.myCanvas.plotPoly(self.poly[idx],idx)
+        for idx in range(len(self.line)): self.myCanvas.plotLine(self.line[idx],idx)
+        for idx in range(len(self.cons)): self.myCanvas.plotCons(self.cons[idx],idx)
 
-    def plotAnnotations(self, circ=None, poly=None, line=None, cons=None):
-        if circ is not None: self.myCanvas.plotCirc(circ)            
-        if poly is not None: self.myCanvas.plotPoly(poly)
-        if line is not None: self.myCanvas.plotLine(line)
-        if cons is not None: self.myCanvas.plotCons(cons)
+    def plotAnnotations(self,
+                        circ=None,circIdx=None , poly=None,polyIdx=None,
+                        line=None,lineIdx=None , cons=None,consIdx=None):
+        if circ is not None: self.myCanvas.plotCirc(circ,circIdx)
+        if poly is not None: self.myCanvas.plotPoly(poly,polyIdx)
+        if line is not None: self.myCanvas.plotLine(line,lineIdx)
+        if cons is not None: self.myCanvas.plotCons(cons,consIdx)
 
     def saveAnnotation2Yaml(self):
         ### preparing yaml and image names
@@ -485,7 +403,9 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
         # self.yamlList.sort()
         self.loadYamlLists()
 
-    #### NAVIGATION functoins
+    #########################################################################
+    ############################# Navigations ###############################
+    #########################################################################
     def navNext(self): self.navGoTo(mode='next')
     def navPrev(self): self.navGoTo(mode='prev')
     def navGoTo(self, mode='goto'):
@@ -510,7 +430,9 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
 
 
 
-    #### MISC
+    #########################################################################
+    ################################ MISC ###################################
+    #########################################################################
     def sortPointsCCW(self, points):
         
         def dis (p1,p2):
@@ -544,13 +466,3 @@ class MainWindow(QtGui.QMainWindow, isagt.Ui_MainWindow):
                                 <p>Python %s - PySide version %s - Qt version %s on %s""" % (__version__,
                                                                                              platform.python_version(), PySide.__version__, QtCore.__version__,
                                                                                              platform.system()))
-
-##############################################################
-
-# if ''name'' == "''main''":
-app = QtGui.QApplication(sys.argv)
-mySW = MainWindow()
-mySW.show()
-app.exec_()
-# sys.exit(app.exec_())
-

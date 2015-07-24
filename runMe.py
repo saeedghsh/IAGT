@@ -33,16 +33,16 @@ app.exec_()
 
 
 
-# TODO - HP
-# why the image is upside down?
-# unwrapping fishheye
-# allow window resize
-# list dependencies and installation instructions for different platform
-# creat visual instructions.
+'''
+TODO: HP
+1_ why the image is upside down?
 
-# TODO: - LP
-# helpers
-# add zooming
-# proper commenting for pydoc
-
-
+TODO: LP
+1_ list dependencies and installation instructions for different platform
+2_ creat visual instructions.
+3_ Enable Helper (this could be an extended usage of adaptive grid): Use edge, corner, line and circle detection to generate a "sticky" grid which helps a faster annotation. It could even suggest on cell level.
+4_ add zooming
+5_ proper commenting for pydoc
+6_ unwrapping fishheye?
+7_ allow window resize
+'''
